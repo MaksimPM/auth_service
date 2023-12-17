@@ -4,11 +4,10 @@ from django.db import models
 
 class User(AbstractUser):
     username = None
-
-    email = models.EmailField(unique=True, verbose_name='Email')
-    phone = models.CharField(max_length=35, verbose_name='Телефон')
+    email = models.EmailField(unique=True, verbose_name='email')
+    phone = models.CharField(max_length=35, verbose_name='телефон')
     site = models.CharField(max_length=100, verbose_name='сайт')
-    password = models.CharField(max_length=100, verbose_name='пароль', blank=True, null=True)
+    password = models.CharField(max_length=100, null=True, blank=True, verbose_name='пароль')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
