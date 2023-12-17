@@ -1,8 +1,5 @@
-from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -23,18 +20,18 @@ class UserRegister(generics.CreateAPIView):
 
 class UserListAPIView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes = (AllowAny,)  # IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     queryset = User.objects.all()
 
 
 class UserUpdateAPIView(generics.UpdateAPIView):
     serializer_class = UserSerializer
-    permission_classes = (AllowAny,)  # IsAuthenticated, #IsOwnerProfile)
+    permission_classes = (IsAuthenticated, IsOwnerProfile)
     queryset = User.objects.all()
 
 
 class UserDestroyAPIView(generics.DestroyAPIView):
-    permission_classes = (AllowAny,)  # IsOwnerProfile,)
+    permission_classes = (IsAuthenticated, IsOwnerProfile,)
     queryset = User.objects.all()
 
 
@@ -58,10 +55,12 @@ class RequestPasswordRecoveryView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
-
-        user = User.objects.get(email=email)
-        send_password_reset_email.delay(user.id)
-        return Response({"message": "Письмо с ссылкой для сброса пароля отправлена на email"})
+        try:
+            user = User.objects.get(email=email)
+            send_password_reset_email.delay(user.id)
+            return Response({"message": "Письмо с ссылкой для сброса пароля отправлена на email"})
+        except User.DoesNotExist:
+            return Response({"message": "Пользователь не найден"}, status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordRecoveryView(generics.UpdateAPIView):
