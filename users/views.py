@@ -20,7 +20,6 @@ class UserRegister(generics.CreateAPIView):
 
 class UserListAPIView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated,)
     queryset = User.objects.all()
 
 
