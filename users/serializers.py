@@ -25,6 +25,12 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+class AuthorizationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['pk', 'email', 'password']
+
+
 class PasswordRecoverySerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=128, write_only=True)
 

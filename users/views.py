@@ -6,7 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
 from users.permissions import IsOwnerProfile
-from users.serializers import UserSerializer, PasswordRecoverySerializer, RequestPasswordRecoverySerializer
+from users.serializers import UserSerializer, PasswordRecoverySerializer, RequestPasswordRecoverySerializer, \
+    AuthorizationSerializer
 from users.tasks import send_email_task, send_password_reset_email
 
 
@@ -35,6 +36,8 @@ class UserDestroyAPIView(generics.DestroyAPIView):
 
 
 class UserAuthorizationView(APIView):
+    serializer_class = AuthorizationSerializer
+
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
