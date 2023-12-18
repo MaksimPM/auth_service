@@ -1,11 +1,9 @@
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
-from users.permissions import IsOwnerProfile
 from users.serializers import UserSerializer, PasswordRecoverySerializer, RequestPasswordRecoverySerializer, \
     AuthorizationSerializer
 from users.tasks import send_email_task, send_password_reset_email
@@ -21,17 +19,6 @@ class UserRegister(generics.CreateAPIView):
 
 class UserListAPIView(generics.ListAPIView):
     serializer_class = UserSerializer
-    queryset = User.objects.all()
-
-
-class UserUpdateAPIView(generics.UpdateAPIView):
-    serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated, IsOwnerProfile)
-    queryset = User.objects.all()
-
-
-class UserDestroyAPIView(generics.DestroyAPIView):
-    permission_classes = (IsAuthenticated, IsOwnerProfile,)
     queryset = User.objects.all()
 
 
