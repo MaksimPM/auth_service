@@ -6,7 +6,7 @@ from users.models import User
 
 
 @shared_task
-def send_email_task(user_id):
+def send_email_task(user_id, password):
     """
     Рассылает письма пользователям с приветствием при регистрации.
     """
@@ -15,7 +15,7 @@ def send_email_task(user_id):
     subject = f'Приветственное письмо!'
     message = f'Привет! \n' \
               f'Добро пожаловать на нашу платформу!\n' \
-              f'Твой пароль для входа: {user.password}'
+              f'Твой пароль для входа: {password}'
     from_email = settings.EMAIL_HOST_USER
     to_email = [user.email]
     send_mail(subject, message, from_email, to_email, fail_silently=False)

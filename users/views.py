@@ -1,4 +1,6 @@
+from django.contrib.auth import authenticate
 from rest_framework import generics, status
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -11,10 +13,24 @@ from users.tasks import send_email_task, send_password_reset_email
 
 class UserRegister(generics.CreateAPIView):
     serializer_class = UserSerializer
+    queryset = User.objects.all()
 
     def perform_create(self, serializer):
-        user = serializer.save()
-        send_email_task.delay(user.id)
+        try:
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            user.JWTToken = str(refresh.access_token)
+            generated_password = User.objects.make_random_password()
+            user.set_password(generated_password)
+            user.save()
+            send_email_task.delay(user.id, generated_password)
+        except:
+            name = serializer.validated_data.get('name')
+            phone = serializer.validated_data.get('phone')
+            email = serializer.validated_data.get('email')
+            site = serializer.validated_data.get('site')
+            if not name or not phone or not email or not site:
+                return Response({"error": "заполните все обязательные поля"}, status.HTTP_400_BAD_REQUEST)
 
 
 class UserListAPIView(generics.ListAPIView):
@@ -22,19 +38,21 @@ class UserListAPIView(generics.ListAPIView):
     queryset = User.objects.all()
 
 
-class UserAuthorizationView(APIView):
+class UserAuthorizationView(GenericAPIView):
     serializer_class = AuthorizationSerializer
+    queryset = User.objects.all()
 
     def post(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
 
-        user = User.objects.get(email=email, password=password)
+        user = authenticate(request, email=email, password=password)
 
         if user:
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            return Response({'access_token': access_token})
+            user.JWTToken = str(refresh.access_token)
+            user.save()
+            return Response({'access_token': user.JWTToken})
         else:
             return Response({"error": "Неверные учетные данные"}, status.HTTP_401_UNAUTHORIZED)
 
@@ -54,6 +72,7 @@ class RequestPasswordRecoveryView(APIView):
 
 class PasswordRecoveryView(generics.UpdateAPIView):
     serializer_class = PasswordRecoverySerializer
+    queryset = User.objects.all()
 
     def update(self, request, *args, **kwargs):
         hash_value = kwargs.get('hash')
@@ -63,16 +82,15 @@ class PasswordRecoveryView(generics.UpdateAPIView):
         try:
             user = User.objects.get(password=hash_value)
         except User.DoesNotExist:
-            return Response({"message": "Invalid hash"}, status.HTTP_400_BAD_REQUEST)
-
-        new_password = serializer.validated_data.get('new_password')
+            return Response({"message": "Invalid hash"})
+        new_password = serializer.validated_data.get('password')
         user.set_password(new_password)
         user.password_reset_hash = None
         user.save()
 
         refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-
+        user.JWTToken = str(refresh.access_token)
+        user.save()
         return Response({"message": "Пароль успешно обновлён!",
-                         "access_token": access_token},
+                         "access_token": user.JWTToken},
                         status.HTTP_200_OK)
